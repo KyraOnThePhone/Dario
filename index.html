@@ -2,45 +2,214 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Herz</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Herz-Seite</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
 
-    @keyframes heartbeat {
-      0% {
-        transform: scale(1);
-      }
-      15% {
-        transform: scale(1.12);
-      }
-      30% {
-        transform: scale(1);
-      }
-      45% {
-        transform: scale(1.08);
-      }
-      60% {
-        transform: scale(1);
-      }
-      100% {
-        transform: scale(1);
-      }
+    body.day {
+      background: linear-gradient(120deg, #fde2e4, #fbcfe8, #f9a8d4);
+      color: #8b0f5f;
+    }
+    body.night {
+      background: linear-gradient(120deg, #1f1b2e, #2a1235, #3b0a2d);
+      color: #f9a8d4;
     }
 
-    .animate-heartbeat {
-      animation: heartbeat 1.1s ease-in-out infinite;
+
+    @keyframes heartbeat {
+      0% { transform: scale(1); }
+      15% { transform: scale(1.18); }
+      30% { transform: scale(1); }
+      45% { transform: scale(1.12); }
+      60% { transform: scale(1); }
+      100% { transform: scale(1); }
+    }
+    .heartbeat {
+      animation: heartbeat 1.2s ease-in-out infinite;
+      cursor: pointer;
+      transition: filter 0.25s ease;
+    }
+    .glow {
+      filter: drop-shadow(0 0 40px rgba(255,100,160,0.9));
+    }
+
+
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    .float { animation: float 5s ease-in-out infinite; }
+
+
+    @keyframes fly { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-120px) scale(1.8); } }
+    .mini-heart { position: absolute; animation: fly 1.2s ease-out forwards; pointer-events: none; }
+
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 1.4s ease forwards; }
+
+
+    @keyframes breathe { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.05); } }
+    .breathe { animation: breathe 1.2s ease-in-out infinite; }
+
+
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.8;
+      background: white;
+      pointer-events: none;
     }
   </style>
 </head>
 
-<body class="min-h-screen flex items-center justify-center bg-pink-200">
-  <img
-    src="heart.png"
-    alt="Herz"
-    class="w-64 md:w-80 lg:w-96 animate-heartbeat"
-  />
+<body class="min-h-screen flex items-center justify-center overflow-hidden breathe">
+
+  <div class="relative flex flex-col items-center text-center px-6 fade-in">
+
+
+    <div id="spruch" class="absolute -top-28 md:-top-36 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold max-w-xs sm:max-w-md md:max-w-lg float drop-shadow-md"></div>
+
+   
+    <img id="herz" src="herz.png" class="w-64 sm:w-80 md:w-[36rem] lg:w-[46rem] heartbeat" alt="Herz" />
+
+   
+    <div class="mt-6 flex flex-col sm:flex-row gap-4">
+      <button id="reset" class="px-4 py-2 rounded-lg bg-rose-500 text-white hover:bg-rose-600 transition">Reset Sprüche</button>
+      <button id="devTheme" class="px-4 py-2 rounded-lg bg-rose-300 text-white hover:bg-rose-400 transition">Toggle Theme (Dev)</button>
+    </div>
+  </div>
+
+ 
+  <audio id="sound" src="heartbeat.mp3" preload="auto" loop></audio>
+
+  <script>
+    const spruchEl = document.getElementById("spruch");
+    const herz = document.getElementById("herz");
+    const resetBtn = document.getElementById("reset");
+    const devThemeBtn = document.getElementById("devTheme");
+    const sound = document.getElementById("sound");
+    let sprueche = [];
+    let speed = 1.2;
+
+
+    function applyThemeByTime() {
+      const hour = new Date().getHours();
+      document.body.classList.remove("day","night");
+      if(hour >= 6 && hour < 18){ document.body.classList.add("day"); } 
+      else{ document.body.classList.add("night"); }
+    }
+    applyThemeByTime();
+
+
+    function generateStars() {
+
+      document.querySelectorAll('.star').forEach(s => s.remove());
+      if(!document.body.classList.contains("night")) return;
+
+      const starCount = Math.min(150, window.innerWidth/4);
+      for(let i=0;i<starCount;i++){
+        const star = document.createElement("div");
+        star.className="star";
+        const size = Math.random()*2+1;
+        star.style.width = star.style.height = size + "px";
+        star.style.top = Math.random()*window.innerHeight + "px";
+        star.style.left = Math.random()*window.innerWidth + "px";
+
+
+        const durationX = (5 + Math.random()*10) + "s";
+        const durationY = (3 + Math.random()*5) + "s";
+        star.animate([
+          { transform: "translate(0,0)" },
+          { transform: `translate(${(Math.random()*10-5)}px, ${(Math.random()*10-5)}px)` },
+          { transform: "translate(0,0)" }
+        ], { duration: (Math.random()*5000+3000), iterations: Infinity, direction:"alternate", easing:"ease-in-out" });
+
+
+        const twinkle = star.animate([
+          { opacity: 0.3 },
+          { opacity: 1 },
+          { opacity: 0.3 }
+        ], { duration: 2000 + Math.random()*2000, iterations: Infinity, direction:"alternate" });
+
+        document.body.appendChild(star);
+      }
+    }
+    generateStars();
+
+
+    async function ladeSprueche() {
+      const res = await fetch("spruch.json");
+      sprueche = await res.json();
+      zeigeNaechstenSpruch();
+      sound.volume = 0.25;
+      sound.play().catch(()=>{ console.log("Audio wartet auf Interaktion"); });
+    }
+
+    function zeigeNaechstenSpruch() {
+      const gesehen = JSON.parse(localStorage.getItem("geseheneSprueche")) || [];
+      const offen = sprueche.filter(s => !gesehen.includes(s));
+      if(offen.length===0){ spruchEl.textContent="💗"; return; }
+      const spruch = offen[Math.floor(Math.random()*offen.length)];
+      spruchEl.textContent = spruch;
+      gesehen.push(spruch);
+      localStorage.setItem("geseheneSprueche", JSON.stringify(gesehen));
+    }
+
+    ladeSprueche();
+
+
+    herz.addEventListener("click",(e)=>{
+      zeigeNaechstenSpruch();
+
+
+      speed = Math.max(0.6,speed-0.15);
+      herz.style.animationDuration = speed+"s";
+
+
+      herz.classList.add("glow");
+      setTimeout(()=>herz.classList.remove("glow"),300);
+
+
+      for(let i=0;i<6;i++){
+        const mini = document.createElement("div");
+        mini.textContent="💗";
+        mini.className="mini-heart";
+        mini.style.left=(Math.random()*window.innerWidth)+"px";
+        mini.style.bottom="20px";
+        mini.style.fontSize=(16+Math.random()*20)+"px";
+        document.body.appendChild(mini);
+        setTimeout(()=>mini.remove(),1200);
+      }
+
+
+      if(navigator.vibrate) navigator.vibrate([60,30,60]);
+
+
+      if(sound.paused){ sound.play().catch(()=>{}); }
+
+
+      setTimeout(()=>{ speed=1.2; herz.style.animationDuration=speed+"s"; },2000);
+    });
+
+
+    resetBtn.addEventListener("click",()=>{
+      localStorage.removeItem("geseheneSprueche");
+      zeigeNaechstenSpruch();
+    });
+
+
+    devThemeBtn.addEventListener("click",()=>{
+      if(document.body.classList.contains("day")){
+        document.body.classList.remove("day"); document.body.classList.add("night");
+      } else if(document.body.classList.contains("night")){
+        document.body.classList.remove("night"); document.body.classList.add("day");
+      }
+      generateStars();
+    });
+
+
+    window.addEventListener("resize", ()=>{ generateStars(); });
+  </script>
 </body>
 </html>
